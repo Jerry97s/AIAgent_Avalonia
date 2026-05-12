@@ -2,7 +2,6 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Windows;
 using System.Windows.Input;
 using AiAgentUi.Models;
 using AiAgentUi.Mvvm;
@@ -359,7 +358,8 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task UploadAndAnalyzeAsync()
     {
-        if (!_fileDialog.TryPickTextFile(out var path) || string.IsNullOrWhiteSpace(path))
+        var (ok, path) = await _fileDialog.TryPickTextFileAsync().ConfigureAwait(true);
+        if (!ok || string.IsNullOrWhiteSpace(path))
             return;
 
         await AnalyzeFileAsync(path);

@@ -1,8 +1,10 @@
-using System;
+using System.Collections.Specialized;
 using System.IO;
-using System.Windows;
-using System.Windows.Input;
-using System.Windows.Threading;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using AiAgentUi.Services;
 using AiAgentUi.ViewModels;
 
@@ -13,7 +15,7 @@ public partial class MainView : Window
     private ConversationViewModel? _wiredConversation;
     private readonly AgentApiClient _agent;
     private readonly MainViewModel _vm;
-    private ActionMemory Memory => ((App)System.Windows.Application.Current).Memory;
+    private ActionMemory Memory => ((App)Avalonia.Application.Current!).Memory;
 
     public MainView()
     {
@@ -24,15 +26,22 @@ public partial class MainView : Window
 
         Memory.LogEvent("main.created");
 
-        Loaded += (_, _) => WireConversationScroll();
+        Loaded += (_, _) =>
+        {
+            WireConversationScroll();
+            if (MessageBox is { } mb)
+                mb.AddHandler(InputElement.KeyDownEvent, MessageBox_KeyDown, RoutingStrategies.Tunnel);
+        };
         _vm.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(MainViewModel.SelectedConversation))
                 WireConversationScroll();
         };
+
+        AddHandler(DragDrop.DragOverEvent, Root_DragOver, RoutingStrategies.Tunnel);
+        AddHandler(DragDrop.DropEvent, Root_Drop);
     }
 
-    /// <summary>기본값. 환경 변수 <c>AGENT_BASE_URL</c> 또는 <c>AI_AGENT_URL</c>로 재정의 가능.</summary>
     internal const string DefaultAgentBaseUrl = "http://127.0.0.1:8787";
 
     internal static string ResolveAgentBaseUrl()
@@ -44,9 +53,9 @@ public partial class MainView : Window
         return DefaultAgentBaseUrl.TrimEnd('/');
     }
 
-    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+    protected override void OnClosing(WindowClosingEventArgs e)
     {
-        if (!((App)System.Windows.Application.Current).ExitRequested)
+        if (!((App)Avalonia.Application.Current!).ExitRequested)
         {
             e.Cancel = true;
             Hide();
@@ -71,10 +80,10 @@ public partial class MainView : Window
         if (!IsLoaded)
             return;
 
-        Dispatcher.BeginInvoke(() =>
+        Dispatcher.UIThread.Post(() =>
         {
             if (ChatList.Items.Count > 0)
-                ChatList.ScrollIntoView(ChatList.Items[^1]);
+                ChatList.ScrollIntoView(ChatList.Items[^1]!);
         }, DispatcherPriority.Background);
     }
 
@@ -99,15 +108,15 @@ public partial class MainView : Window
         }
     }
 
-    private void ConversationMessages_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    private void ConversationMessages_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         => ScrollChatToBottom();
 
-    private void MessageBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    private void MessageBox_KeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key != Key.Enter)
             return;
 
-        if ((Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+        if ((e.KeyModifiers & KeyModifiers.Shift) == KeyModifiers.Shift)
             return;
 
         if (DataContext is MainViewModel vm && vm.SendCommand.CanExecute(null))
@@ -117,36 +126,38 @@ public partial class MainView : Window
         }
     }
 
-    private void Root_PreviewDragOver(object sender, System.Windows.DragEventArgs e)
+    private void Root_DragOver(object? sender, DragEventArgs e)
     {
-        if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop))
-        {
-            e.Effects = System.Windows.DragDropEffects.Copy;
-        }
-        else
-        {
-            e.Effects = System.Windows.DragDropEffects.None;
-        }
+        e.DragEffects = e.Data.Contains(DataFormats.Files)
+            ? DragDropEffects.Copy
+            : DragDropEffects.None;
         e.Handled = true;
     }
 
-    private async void Root_Drop(object sender, System.Windows.DragEventArgs e)
+    private void Root_Drop(object? sender, DragEventArgs e)
     {
         try
         {
-            if (!e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop))
+            if (e.Data.GetFiles() is not { } files)
                 return;
 
-            var files = (string[]?)e.Data.GetData(System.Windows.DataFormats.FileDrop);
-            if (files is null || files.Length == 0)
+            var paths = new List<string>();
+            foreach (var file in files)
+            {
+                string? p = null;
+                if (file is IStorageFile sf)
+                    p = sf.Path.IsAbsoluteUri ? sf.Path.LocalPath : sf.Path.ToString();
+                else if (file.Path.IsAbsoluteUri && file.Path.IsFile)
+                    p = file.Path.LocalPath;
+
+                if (!string.IsNullOrEmpty(p) && File.Exists(p))
+                    paths.Add(p);
+            }
+
+            if (paths.Count == 0)
                 return;
 
-            // Filter directories out; only files.
-            var paths = files.Where(File.Exists).ToArray();
-            if (paths.Length == 0)
-                return;
-
-            await _vm.AnalyzeFilesAsync(paths);
+            _ = _vm.AnalyzeFilesAsync(paths);
         }
         catch (Exception ex)
         {
@@ -154,4 +165,3 @@ public partial class MainView : Window
         }
     }
 }
-

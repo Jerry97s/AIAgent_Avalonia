@@ -1,0 +1,252 @@
+<Window x:Class="AiAgentUi.Views.MainView"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:behaviors="using:AiAgentUi.Views.Behaviors"
+        mc:Ignorable="d"
+        x:Name="RootWindow"
+        Title="AI Agent"
+        Width="940" Height="688"
+        MinWidth="780" MinHeight="560"
+        Icon="avares://AiAgentUi/Assets/app.ico"
+        WindowStartupLocation="CenterScreen"
+        UseLayoutRounding="True"
+        Background="{StaticResource ShellBackgroundBrush}"
+        FontFamily="Segoe UI Variable Display, Segoe UI, Inter"
+        DragDrop.AllowDrop="True">
+    <Grid Margin="11">
+        <Border CornerRadius="14" Background="{StaticResource Surface}"
+                BorderBrush="{StaticResource BorderHair}" BorderThickness="1"
+                BoxShadow="0 0 28 0 #0F27272A">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0" CornerRadius="14,14,0,0" ClipToBounds="True" Padding="12,10,12,10"
+                        Background="{StaticResource Surface}">
+                    <Border BorderBrush="{StaticResource BorderHair}" BorderThickness="0,0,0,1">
+                        <Grid Height="52">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Border Grid.Column="0" Width="44" Height="44" CornerRadius="12"
+                                    BorderBrush="{StaticResource BorderHair}" BorderThickness="1"
+                                    Background="#FFFFFF" Margin="0,0,12,0"
+                                    BoxShadow="0 0 8 0 #0F6366F1">
+                                <Image Source="avares://AiAgentUi/Assets/logo.png"
+                                       Stretch="Uniform" Margin="4"/>
+                            </Border>
+
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="에이전트 채팅" FontWeight="SemiBold" FontSize="13.5"
+                                           Foreground="{StaticResource Ink900}"/>
+                                <TextBlock Margin="0,2,0,0" FontSize="10.5" Foreground="{StaticResource Ink500}"
+                                           Text="127.0.0.1:8787 · 고정 연결"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" Orientation="Horizontal"
+                                        HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <Button Content="새 대화" Margin="0,0,6,0" Classes="ghost"
+                                        Command="{Binding NewConversationCommand}"/>
+                                <Button Content="기록 삭제" Margin="0,0,6,0" Classes="ghost"
+                                        Command="{Binding ClearHistoryCommand}"/>
+                                <Button Content="연결 확인" Classes="ghost"
+                                        Command="{Binding HealthCommand}"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Border>
+
+                <Border Grid.Row="1" Margin="10,8,10,8" Padding="9" CornerRadius="10"
+                        Background="{StaticResource Surface}" BorderBrush="{StaticResource BorderHair}" BorderThickness="1">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="대화" FontWeight="SemiBold" FontSize="11"
+                                   Foreground="{StaticResource Ink500}" Margin="2,0,0,8"/>
+                        <Grid Grid.Row="1">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Auto"
+                                          VerticalScrollBarVisibility="Disabled" Margin="0,0,0,8">
+                                <ListBox x:Name="ConversationTabs"
+                                         ItemsSource="{Binding Conversations}"
+                                         SelectedItem="{Binding SelectedConversation}"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                         Padding="0">
+                                    <ListBox.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal"/>
+                                        </ItemsPanelTemplate>
+                                    </ListBox.ItemsPanel>
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="{Binding Title}" FontSize="11.5"
+                                                           MaxWidth="156" TextTrimming="CharacterEllipsis"
+                                                           ToolTip.Tip="{Binding Title}" VerticalAlignment="Center"/>
+                                                <Button Grid.Column="1" Margin="6,0,0,0" Padding="0"
+                                                        Background="Transparent" BorderThickness="0"
+                                                        Focusable="False" Cursor="Hand"
+                                                        Command="{Binding #ConversationTabs.DataContext.TogglePinCommand}"
+                                                        CommandParameter="{Binding}">
+                                                    <Path Width="11" Height="11" Stretch="Uniform"
+                                                          Fill="{Binding IsPinned, Converter={StaticResource PinFill}}"
+                                                          Data="M14,2 L10,6 L10,10 L8,12 L12,12 L14,10 L18,10 L22,6 L18,2 Z"/>
+                                                </Button>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                    <ListBox.Styles>
+                                        <Style Selector="ListBoxItem">
+                                            <Setter Property="Margin" Value="0,0,6,0"/>
+                                            <Setter Property="Padding" Value="0"/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="ContextFlyout">
+                                                <Setter.Value>
+                                                    <MenuFlyout>
+                                                        <MenuItem Header="삭제"
+                                                                  Command="{Binding #ConversationTabs.DataContext.CloseConversationCommand}"
+                                                                  CommandParameter="{Binding}"/>
+                                                    </MenuFlyout>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                        <Style Selector="ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+                                            <Setter Property="CornerRadius" Value="8"/>
+                                            <Setter Property="Padding" Value="10,6"/>
+                                            <Setter Property="Background" Value="{StaticResource Surface}"/>
+                                            <Setter Property="BorderBrush" Value="{StaticResource BorderHair}"/>
+                                            <Setter Property="BorderThickness" Value="1"/>
+                                        </Style>
+                                        <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+                                            <Setter Property="Background" Value="{StaticResource AccentStrong}"/>
+                                            <Setter Property="BorderBrush" Value="{StaticResource AccentStrong}"/>
+                                            <Setter Property="Foreground" Value="#FFFFFF"/>
+                                        </Style>
+                                        <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+                                            <Setter Property="Background" Value="{StaticResource SurfaceSubtle}"/>
+                                        </Style>
+                                        <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+                                            <Setter Property="Background" Value="{StaticResource AccentStrong}"/>
+                                        </Style>
+                                    </ListBox.Styles>
+                                </ListBox>
+                            </ScrollViewer>
+
+                            <Border Grid.Row="1" CornerRadius="10" Background="{StaticResource Surface}"
+                                    BorderBrush="{StaticResource BorderHair}" BorderThickness="1">
+                                <ListBox x:Name="ChatList" BorderThickness="0" Background="Transparent"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         Padding="8"
+                                         behaviors:SmoothScrollBehavior.SmoothScroll="True"
+                                         behaviors:SmoothScrollBehavior.SmoothWheelStep="48"
+                                         ItemsSource="{Binding SelectedConversation.Messages}">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Margin="0,0,0,5" Padding="10,8" CornerRadius="11" MaxWidth="640"
+                                                    HorizontalAlignment="{Binding IsUser, Converter={StaticResource BoolToHAlign}}"
+                                                    Background="{Binding IsUser, Converter={StaticResource UserChatBg}}"
+                                                    BorderBrush="{Binding IsUser, Converter={StaticResource UserChatBorder}}"
+                                                    BorderThickness="1">
+                                                <Border.ContextFlyout>
+                                                    <MenuFlyout>
+                                                        <MenuItem Header="삭제"
+                                                                  Command="{Binding #ChatList.DataContext.DeleteMessageCommand}"
+                                                                  CommandParameter="{Binding}"
+                                                                  IsEnabled="{Binding IsTypingIndicator, Converter={StaticResource InverseBool}}"/>
+                                                    </MenuFlyout>
+                                                </Border.ContextFlyout>
+                                                <StackPanel>
+                                                    <TextBlock FontWeight="SemiBold" FontSize="10" Text="{Binding Role}"
+                                                               Margin="0,0,0,4"
+                                                               Foreground="{Binding IsUser, Converter={StaticResource UserRoleFg}}"/>
+                                                    <Grid>
+                                                        <TextBox x:Name="MessageText" Text="{Binding Text}"
+                                                                 IsReadOnly="True" AcceptsReturn="True"
+                                                                 BorderThickness="0" Background="Transparent"
+                                                                 Foreground="{StaticResource Ink900}" FontSize="13"
+                                                                 TextWrapping="Wrap" Cursor="IBeam" Padding="0"
+                                                                 IsVisible="{Binding IsTypingIndicator, Converter={StaticResource InverseBool}}"/>
+                                                        <StackPanel Orientation="Horizontal"
+                                                                    IsVisible="{Binding IsTypingIndicator}">
+                                                            <TextBlock Text="●" Foreground="{StaticResource Accent}" Opacity="0.55" FontSize="9" Margin="0,3,5,0"/>
+                                                            <TextBlock Text="●" Foreground="{StaticResource Accent}" Opacity="0.55" FontSize="9" Margin="0,3,5,0"/>
+                                                            <TextBlock Text="●" Foreground="{StaticResource Accent}" Opacity="0.55" FontSize="9" Margin="0,3,0,0"/>
+                                                            <TextBlock Margin="8,0,0,0" VerticalAlignment="Center"
+                                                                       Foreground="{StaticResource Ink500}" FontSize="11"
+                                                                       Text="{Binding #RootWindow.DataContext.RemainingSeconds, StringFormat={}{0}s}"/>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="2" Margin="10,0,10,9" Padding="9" CornerRadius="10"
+                        Background="{StaticResource Surface}" BorderBrush="{StaticResource BorderHair}" BorderThickness="1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" CornerRadius="8" Background="{StaticResource SurfaceMuted}"
+                                BorderBrush="{StaticResource BorderHair}" BorderThickness="1" Padding="1">
+                            <TextBox x:Name="MessageBox" MinHeight="36" VerticalContentAlignment="Center"
+                                     Padding="10,8" AcceptsReturn="True" BorderThickness="0"
+                                     Background="Transparent" Foreground="{StaticResource Ink900}" FontSize="13"
+                                     CaretBrush="{StaticResource Accent}"
+                                     Text="{Binding SelectedConversation.Draft, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                        </Border>
+                        <Button Grid.Column="1" Content="파일" Margin="8,0,0,0" Classes="ghost"
+                                Command="{Binding UploadCommand}"/>
+                        <Grid Grid.Column="2" Margin="8,0,0,0">
+                            <Button Content="보내기" Command="{Binding SendCommand}" Classes="primary"
+                                    IsVisible="{Binding IsBusy, Converter={StaticResource InverseBool}}"/>
+                            <Button Command="{Binding CancelCommand}" Classes="primary"
+                                    IsVisible="{Binding IsBusy}">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock Text="중지" FontSize="12.5" VerticalAlignment="Center"/>
+                                    <TextBlock Margin="7,0,0,0" Opacity="0.9" FontSize="12.5" VerticalAlignment="Center"
+                                               Text="{Binding RemainingSeconds, StringFormat={}{0}s}"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="3" Margin="14,0,14,11" Padding="0" Background="Transparent">
+                    <TextBlock Foreground="{StaticResource Ink500}" FontSize="10.5"
+                               HorizontalAlignment="Right" Text="{Binding StatusText}"/>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

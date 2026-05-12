@@ -1,70 +1,51 @@
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 
 namespace AiAgentUi.Views.Behaviors;
 
 public static class SmoothScrollBehavior
 {
-    public static readonly DependencyProperty EnabledProperty =
-        DependencyProperty.RegisterAttached(
-            "Enabled",
-            typeof(bool),
-            typeof(SmoothScrollBehavior),
-            new PropertyMetadata(false, OnEnabledChanged));
+    public static readonly AttachedProperty<bool> SmoothScrollProperty =
+        AvaloniaProperty.RegisterAttached<ListBox, bool>("SmoothScroll", typeof(SmoothScrollBehavior));
 
-    public static void SetEnabled(DependencyObject element, bool value) => element.SetValue(EnabledProperty, value);
-    public static bool GetEnabled(DependencyObject element) => (bool)element.GetValue(EnabledProperty);
+    public static readonly AttachedProperty<double> SmoothWheelStepProperty =
+        AvaloniaProperty.RegisterAttached<ListBox, double>("SmoothWheelStep", typeof(SmoothScrollBehavior), 48);
 
-    public static readonly DependencyProperty WheelStepProperty =
-        DependencyProperty.RegisterAttached(
-            "WheelStep",
-            typeof(double),
-            typeof(SmoothScrollBehavior),
-            new PropertyMetadata(48d));
+    public static void SetSmoothScroll(AvaloniaObject element, bool value) => element.SetValue(SmoothScrollProperty, value);
+    public static bool GetSmoothScroll(AvaloniaObject element) => element.GetValue(SmoothScrollProperty);
 
-    public static void SetWheelStep(DependencyObject element, double value) => element.SetValue(WheelStepProperty, value);
-    public static double GetWheelStep(DependencyObject element) => (double)element.GetValue(WheelStepProperty);
+    public static void SetSmoothWheelStep(AvaloniaObject element, double value) => element.SetValue(SmoothWheelStepProperty, value);
+    public static double GetSmoothWheelStep(AvaloniaObject element) => element.GetValue(SmoothWheelStepProperty);
 
-    private static void OnEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    static SmoothScrollBehavior()
     {
-        if (d is not System.Windows.Controls.Control c)
-            return;
-
-        if ((bool)e.NewValue)
-            c.PreviewMouseWheel += OnPreviewMouseWheel;
-        else
-            c.PreviewMouseWheel -= OnPreviewMouseWheel;
+        SmoothScrollProperty.Changed.AddClassHandler<ListBox>(OnSmoothScrollChanged);
     }
 
-    private static void OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    private static void OnSmoothScrollChanged(ListBox listBox, AvaloniaPropertyChangedEventArgs e)
     {
-        if (sender is not DependencyObject d)
+        listBox.RemoveHandler(InputElement.PointerWheelChangedEvent, OnPointerWheelChanged);
+        if (e.NewValue is true)
+            listBox.AddHandler(InputElement.PointerWheelChangedEvent, OnPointerWheelChanged, RoutingStrategies.Tunnel);
+    }
+
+    private static void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        if (sender is not ListBox listBox || !GetSmoothScroll(listBox))
             return;
 
-        var viewer = FindScrollViewer(d);
+        var viewer = listBox.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
         if (viewer is null)
             return;
 
-        var step = GetWheelStep(d);
-        var direction = e.Delta > 0 ? -1 : 1;
-        viewer.ScrollToVerticalOffset(viewer.VerticalOffset + direction * step);
+        var step = GetSmoothWheelStep(listBox);
+        var direction = e.Delta.Y > 0 ? -1 : 1;
+        var next = viewer.Offset.Y + direction * step;
+        next = Math.Clamp(next, 0, Math.Max(0, viewer.Extent.Height - viewer.Viewport.Height));
+        viewer.Offset = viewer.Offset.WithY(next);
         e.Handled = true;
     }
-
-    private static ScrollViewer? FindScrollViewer(DependencyObject root)
-    {
-        if (root is ScrollViewer sv)
-            return sv;
-
-        for (var i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(root); i++)
-        {
-            var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
-            var found = FindScrollViewer(child);
-            if (found is not null)
-                return found;
-        }
-        return null;
-    }
 }
-

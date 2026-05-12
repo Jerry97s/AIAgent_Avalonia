@@ -35,7 +35,7 @@ public sealed class GlobalHotkey : IDisposable
         return _registered;
     }
 
-    public void ProcessMessage(int msg, nint wParam)
+    public void ProcessMessage(uint msg, nint wParam)
     {
         if (msg != WM_HOTKEY)
             return;
