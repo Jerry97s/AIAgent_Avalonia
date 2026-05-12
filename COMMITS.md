@@ -5,6 +5,18 @@
 
 ---
 
+## 2026-05-12T11:06:42+09:00 · `4378af2`
+
+**feat: Linux(net8.0) 클라이언트 빌드 및 README·CI 반영**
+
+**작성자:** pjh <pjh>
+
+## 2026-05-12T00:30:43Z · `c570b87`
+
+**문서: COMMITS.md 자동 갱신 [skip ci]**
+
+**작성자:** github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+
 ## 2026-05-12T09:30:26+09:00 · `4bb5cd9`
 
 **docs: README를 Avalonia 11 클라이언트 기준으로 갱신**
