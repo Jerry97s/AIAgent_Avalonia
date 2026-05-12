@@ -5,6 +5,18 @@
 
 ---
 
+## 2026-05-12T09:28:22+09:00 · `c202e41`
+
+**refactor(ui): WPF 클라이언트를 Avalonia 11 데스크톱으로 전환**
+
+**작성자:** pjh <pjh>
+
+## 2026-05-12T00:11:58Z · `2577a2f`
+
+**문서: COMMITS.md 자동 갱신 [skip ci]**
+
+**작성자:** github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+
 ## 2026-04-24T17:19:37+09:00 · `436f51e`
 
 **문서: README에 Description/Topics 추가**
