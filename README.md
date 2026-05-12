@@ -4,15 +4,15 @@
 
 # Ai-Agent-UI
 
-Windows용 **WPF 클라이언트**와 **Python(FastAPI) 에이전트 서버**를 HTTP로 연결하는 데스크톱 AI 채팅 애플리케이션입니다. 기본 에이전트 주소는 `http://127.0.0.1:8787`이며, 클라이언트는 **`AGENT_BASE_URL`** 로 바꿀 수 있습니다.
+Windows용 **Avalonia 11 데스크톱 클라이언트**와 **Python(FastAPI) 에이전트 서버**를 HTTP로 연결하는 AI 채팅 애플리케이션입니다. 기본 에이전트 주소는 `http://127.0.0.1:8787`이며, 클라이언트는 **`AGENT_BASE_URL`** 로 바꿀 수 있습니다.
 
 ## Description
 
-Windows 전용(.NET 8) **WPF 데스크톱 AI 채팅 UI**입니다. FastAPI 기반 에이전트 서버와 연결해 다중 대화 탭·핀·파일 업로드·드래그앤드롭·트레이·전역 단축키(Ctrl+F12) 등 제품형 UX를 제공합니다.
+**Avalonia 11** + **Fluent** 테마 기반의 .NET 8 데스크톱 AI 채팅 UI입니다. (현재 클라이언트 타깃은 **`net8.0-windows`**.) FastAPI 에이전트와 연결해 다중 대화 탭·핀·파일 업로드(스토리지 피커)·드래그앤드롭·시스템 트레이(`TrayIcon` / `NativeMenu`)·전역 단축키 **Ctrl+F12**(Win32 `RegisterHotKey` + WndProc 훅) 등 제품형 UX를 제공합니다.
 
 ## Topics
 
-`wpf`, `dotnet`, `dotnet8`, `windows`, `desktop-app`, `mvvm`, `fastapi`, `ai-chat`, `tray`, `global-hotkey`
+`avalonia`, `avaloniaui`, `dotnet`, `dotnet8`, `windows`, `desktop-app`, `mvvm`, `fastapi`, `ai-chat`, `tray`, `global-hotkey`
 
 ## 빠른 시작
 
@@ -23,7 +23,10 @@ Windows 전용(.NET 8) **WPF 데스크톱 AI 채팅 UI**입니다. FastAPI 기�
    python agent_server.py
    ```
 2. **클라이언트**  
-   `AiAgentUi` 프로젝트를 Visual Studio 또는 `dotnet run`으로 실행 (Windows / .NET 8).  
+   Windows에서 `AiAgentUi` 프로젝트를 Visual Studio 또는 아래처럼 실행합니다.  
+   ```powershell
+   dotnet run --project .\AiAgentUi\AiAgentUi.csproj
+   ```  
    다른 호스트를 쓰려면 시작 전에 환경 변수 **`AGENT_BASE_URL`** (또는 `AI_AGENT_URL`)을 설정합니다.
 
 3. **에이전트를 실제 모델로** (선택)  
@@ -32,7 +35,7 @@ Windows 전용(.NET 8) **WPF 데스크톱 AI 채팅 UI**입니다. FastAPI 기�
 4. **테스트**  
    ```powershell
    dotnet test .\AiAgentUi.sln -c Release
-   ```
+   ```  
    자세한 내용은 [`docs/TESTING.md`](./docs/TESTING.md). Python 에이전트 테스트는 `python` 폴더에서 `pytest` 실행.
 
 ## 문서 인덱스
@@ -51,20 +54,22 @@ Windows 전용(.NET 8) **WPF 데스크톱 AI 채팅 UI**입니다. FastAPI 기�
 | **통신** | `HttpClient` 기반 REST(`/health`, `/chat`), JSON 직렬화 |
 | **상태** | 로컬 JSON(`state.json`)으로 대화 탭·메시지·핀 상태 영속화, 이벤트는 `Logs/날짜/` 하위 JSONL |
 | **UX** | 다중 대화 탭, 핀, 파일 업로드·드래그앤드롭, 트레이·전역 단축키(Ctrl+F12), 응답 타임아웃·카운트다운 |
+| **UI 스택** | Avalonia 11, Fluent 테마, `Program.cs` + `App.axaml` / `Views/MainView.axaml` |
 
 ### 장점
 
-- **제품형 UI**: 탭·스타일·애니메이션 등 사용성 요소가 잘 묶여 있음.
+- **제품형 UI**: 탭·스타일 등 사용성 요소가 잘 묶여 있음.
 - **관심사 분리**: View / ViewModel / Agent 클라이언트 / 로컬 저장소가 역할별로 나뉨.
 - **운영 관찰 가능성**: 이벤트 로그·응답 길이 표시 등으로 현장 디버깅에 유리.
 - **확장 포인트 명확**: 에이전트는 OpenAI 호환 API·`IAgentClient`로 모델·엔드포인트 교체가 가능.
+- **Avalonia**: XAML 기반 크로스 플랫폼 UI 프레임워크로, 동일 코드베이스를 다른 OS로 넓히기 위한 기반이 됨(현재 빌드는 Windows 중심).
 
 ### 단점 / 리스크
 
 - LLM 사용 시 **외부 API 비용·키 관리·모델 가용성**은 운영 주체가 책임져야 한다.
 - **동일 PC 루프백** 외 원격 접속 시에는 [`docs/SECURITY_AND_DEPLOYMENT.md`](./docs/SECURITY_AND_DEPLOYMENT.md)대로 TLS·인증을 반드시 추가해야 함.
 - 긴 응답·대용량 파일 처리는 **메모리·타임아웃** 튜닝이 필요할 수 있음.
-- WPF + 트레이·핫키는 **Windows 전용**이다.
+- **전역 단축키·일부 Win32 포그라운드 동작**은 Windows 전용 API에 의존하며, 클라이언트 TFM도 `net8.0-windows`이다. macOS/Linux 전용 빌드를 만들려면 트레이/핫키·창 포커스 경로를 플랫폼별로 나누는 작업이 필요하다.
 
 ### 기술 점수 (주관적 10점 만점)
 
@@ -87,13 +92,13 @@ Windows 전용(.NET 8) **WPF 데스크톱 AI 채팅 UI**입니다. FastAPI 기�
 - **모델**: Python `agent_server.py`의 `_run_agent`에 LangChain/LlamaIndex/OpenAI 등 연결.
 - **프로토콜**: 동일 REST에 스트리밍(`/chat/stream`)、도구 호출 필드 추가 시 클라이언트 DTO·UI만 확장.
 - **인증**: 클라이언트에 설정·헤더 주입, 서버에 API 키 검증.
-- **크로스 플랫폼**: UI를 Avalonia/MAUI로 이전하거나 웹 클라이언트를 추가해 동일 API 사용 가능.
+- **크로스 플랫폼**: Avalonia 클라이언트를 `net8.0` 등으로 확장하고 Win32 전용 기능을 조건부 컴파일·대체 구현으로 나누거나, 웹 클라이언트를 추가해 동일 API를 사용할 수 있음.
 
 ## 저장소 레이아웃
 
 ```
 AI_Agent_UI/
-├── AiAgentUi/          # C# WPF 클라이언트
+├── AiAgentUi/          # C# Avalonia 11 클라이언트 (Fluent, MVVM)
 ├── AiAgentUi.Tests/    # xUnit (DTO·AgentApiClient)
 ├── python/             # FastAPI 에이전트 (+ pytest)
 ├── docs/               # API · 테스트 · 보안/배포
