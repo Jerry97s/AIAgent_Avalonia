@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Avalonia.Controls;
 using Avalonia.Platform;
 
@@ -34,8 +35,12 @@ public sealed class TrayService : IDisposable
             }
         }
 
+        var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        var openLabel = isWindows ? "열기 (Ctrl+F12)" : "열기";
+        var tip = isWindows ? "AI Agent UI (Ctrl+F12)" : "AI Agent UI";
+
         var menu = new NativeMenu();
-        var openItem = new NativeMenuItem("열기 (Ctrl+F12)");
+        var openItem = new NativeMenuItem(openLabel);
         openItem.Click += (_, _) => OpenRequested?.Invoke();
         menu.Items.Add(openItem);
         menu.Items.Add(new NativeMenuItemSeparator());
@@ -46,7 +51,7 @@ public sealed class TrayService : IDisposable
         _tray = new TrayIcon
         {
             Icon = icon,
-            ToolTipText = "AI Agent UI (Ctrl+F12)",
+            ToolTipText = tip,
             Menu = menu,
             IsVisible = true,
         };

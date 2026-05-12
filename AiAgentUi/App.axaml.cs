@@ -1,8 +1,9 @@
+#if WINDOWS
 using System.Runtime.InteropServices;
+#endif
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
@@ -14,12 +15,14 @@ namespace AiAgentUi;
 public partial class App : Application
 {
     private const int HotkeyId = 0xA11;
+#if WINDOWS
     private GlobalHotkey? _hotkey;
+    private Window? _hotkeyWindow;
+    private Win32Properties.CustomWndProcHookCallback? _hotkeyWndProc;
+#endif
     private TrayService? _tray;
     private ActionMemory? _memory;
     private bool _exitRequested;
-    private Window? _hotkeyWindow;
-    private Win32Properties.CustomWndProcHookCallback? _hotkeyWndProc;
 
     internal ActionMemory Memory => _memory ?? throw new InvalidOperationException("Memory not initialized.");
     internal bool ExitRequested => _exitRequested;
@@ -52,11 +55,11 @@ public partial class App : Application
         desktop.Exit += (_, _) =>
         {
             _memory?.LogEvent("app.exit");
+#if WINDOWS
             if (_hotkeyWindow is not null && _hotkeyWndProc is not null)
                 Win32Properties.RemoveWndProcHookCallback(_hotkeyWindow, _hotkeyWndProc);
 
             _hotkey?.Dispose();
-            _tray?.Dispose();
             try
             {
                 _hotkeyWindow?.Close();
@@ -65,22 +68,33 @@ public partial class App : Application
             {
                 // ignore
             }
+#endif
+            _tray?.Dispose();
         };
 
         Dispatcher.UIThread.Post(BringMainWindowToForeground, DispatcherPriority.Background);
+#if WINDOWS
         Dispatcher.UIThread.Post(InitializeGlobalHotkeyShell, DispatcherPriority.Background);
-        Dispatcher.UIThread.Post(() => ShowStartupHintNearTray(desktop.MainWindow), DispatcherPriority.Background);
+        const string startupHint =
+            "창을 닫으면 트레이로 숨깁니다. Ctrl+F12로 다시 열 수 있어요.";
+#else
+        const string startupHint =
+            "창을 닫으면 트레이로 숨깁니다. 트레이 아이콘에서 다시 열 수 있어요.";
+#endif
+        Dispatcher.UIThread.Post(
+            () => ShowStartupHintNearTray(desktop.MainWindow, startupHint),
+            DispatcherPriority.Background);
 
         base.OnFrameworkInitializationCompleted();
     }
 
-    private void ShowStartupHintNearTray(Window? anchor)
+    private void ShowStartupHintNearTray(Window? anchor, string body)
     {
         ShowTrayHintWindow(
             anchor,
             "AiAgentUi",
             "AI Agent UI",
-            "창을 닫으면 트레이로 숨깁니다. Ctrl+F12로 다시 열 수 있어요.");
+            body);
     }
 
     private void ShowTrayHintWindow(Window? anchor, string titleBar, string headline, string body, int dismissMs = 3200)
@@ -106,7 +120,7 @@ public partial class App : Application
             WindowStartupLocation = WindowStartupLocation.Manual,
             ShowInTaskbar = false,
             Topmost = true,
-            FontFamily = new FontFamily("Segoe UI Variable Display, Segoe UI, Inter"),
+            FontFamily = new FontFamily("Segoe UI Variable Display, Segoe UI, Inter, Noto Sans, sans-serif"),
             Background = Brushes.White,
         };
 
@@ -177,10 +191,13 @@ public partial class App : Application
         mw.Topmost = true;
         mw.Activate();
         mw.Topmost = false;
+#if WINDOWS
         TryWin32Foreground(mw);
+#endif
         _memory?.LogEvent("main.foreground");
     }
 
+#if WINDOWS
     private static void TryWin32Foreground(Window w)
     {
         try
@@ -269,6 +286,24 @@ public partial class App : Application
         return IntPtr.Zero;
     }
 
+    private const uint VkF12 = 0x7B;
+
+    private const int SW_SHOW = 5;
+    private const int SW_RESTORE = 9;
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(nint hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool BringWindowToTop(nint hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(nint hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsIconic(nint hWnd);
+#endif
+
     private void RequestExit()
     {
         _exitRequested = true;
@@ -297,25 +332,10 @@ public partial class App : Application
         w.Topmost = true;
         w.Activate();
         w.Topmost = false;
+#if WINDOWS
         TryWin32Foreground(w);
+#endif
         w.Focus();
         _memory?.LogEvent("main.show");
     }
-
-    private const uint VkF12 = 0x7B;
-
-    private const int SW_SHOW = 5;
-    private const int SW_RESTORE = 9;
-
-    [DllImport("user32.dll")]
-    private static extern bool SetForegroundWindow(nint hWnd);
-
-    [DllImport("user32.dll")]
-    private static extern bool BringWindowToTop(nint hWnd);
-
-    [DllImport("user32.dll")]
-    private static extern bool ShowWindow(nint hWnd, int nCmdShow);
-
-    [DllImport("user32.dll")]
-    private static extern bool IsIconic(nint hWnd);
 }

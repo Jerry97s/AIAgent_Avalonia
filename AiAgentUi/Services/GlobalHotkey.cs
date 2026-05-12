@@ -59,4 +59,3 @@ public sealed class GlobalHotkey : IDisposable
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool UnregisterHotKey(nint hWnd, int id);
 }
-
